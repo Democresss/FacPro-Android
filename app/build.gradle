@@ -1,0 +1,79 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Versión: la pone GitHub Actions (número de compilación). Cada versión nueva la instalan las apps solas.
+def codigoVersion = (project.findProperty('versionCode') ?: '1') as Integer
+def nombreVersion = (project.findProperty('versionName') ?: '1.0.0') as String
+// Llave de firma: solo en los secretos de GitHub (nunca en el repositorio)
+def almacenFirma = System.getenv('FACPRO_KEYSTORE')
+
+android {
+    namespace 'org.facturadorproecuador.app'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 34
+        versionCode codigoVersion
+        versionName nombreVersion
+        buildConfigField 'String', 'SITIO', '"https://facturadorproecuador.org"'
+        buildConfigField 'String', 'ACTUALIZACIONES', '"https://github.com/Democresss/FacPro-Android/releases/latest/download/"'
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    flavorDimensions = ['app']
+    productFlavors {
+        chofer {
+            dimension 'app'
+            applicationId 'org.facturadorproecuador.chofer'
+            buildConfigField 'String', 'INICIO', '"/v2/chofer/app"'
+            buildConfigField 'String', 'APK', '"FacPro-Chofer.apk"'
+            buildConfigField 'boolean', 'CHOFER', 'true'
+        }
+        pedidos {
+            dimension 'app'
+            applicationId 'org.facturadorproecuador.pedidos'
+            buildConfigField 'String', 'INICIO', '"/v2/pedidos/dashboard"'
+            buildConfigField 'String', 'APK', '"FacPro-Pedidos.apk"'
+            buildConfigField 'boolean', 'CHOFER', 'false'
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (almacenFirma) {
+                storeFile file(almacenFirma)
+                storePassword System.getenv('FACPRO_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('FACPRO_KEY_ALIAS')
+                keyPassword System.getenv('FACPRO_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (almacenFirma) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}
